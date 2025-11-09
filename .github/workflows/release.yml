@@ -1,0 +1,44 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (v1.0.0, v1.1.0, etc.)
+  workflow_dispatch:  # Manual trigger for testing
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          body: |
+            ## 🔖 Curator ${{ github.ref_name }}
+
+            Blazing fast CLI to curate web content as clean markdown.
+
+            ### Installation
+
+            **One-line install (Linux/macOS/WSL):**
+            ```bash
+            curl -fsSL https://www.ain3sh.com/curator/install.sh | bash
+            ```
+
+            **Or install via npm:**
+            ```bash
+            npm install -g curator-cli
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
