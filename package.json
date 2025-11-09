@@ -5,14 +5,28 @@
   "bin": {
     "curate": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --format=cjs --external:fsevents",
     "dev": "npm run build && node dist/index.js",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": ["cli", "markdown", "scraping", "firecrawl", "curator"],
-  "author": "",
+  "author": "Ainesh Chatterjee",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ain3sh/curator-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ain3sh/curator-cli/issues"
+  },
+  "homepage": "https://github.com/ain3sh/curator-cli#readme",
   "dependencies": {
     "commander": "^12.1.0",
     "dotenv": "^16.4.5"

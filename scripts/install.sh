@@ -1,95 +1,90 @@
 #!/bin/bash
+# Curator installer - installs curator-cli via npm
+# Usage: curl -fsSL https://www.ain3sh.com/curator/install.sh | bash
+
 set -e
 
-# Curator installation script
+echo "🎨 Curator installer"
+echo ""
 
-REPO="ain3sh/curator"
-BINARY_NAME="curate"
-INSTALL_DIR="$HOME/.local/bin"
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-echo "🎨 Installing Curator CLI..."
-
-# Detect OS and architecture
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
-
-case "$OS" in
-  linux*)
-    OS="linux"
-    ;;
-  darwin*)
-    OS="darwin"
-    ;;
-  msys*|mingw*|cygwin*)
-    OS="windows"
-    BINARY_NAME="curate.exe"
-    ;;
-  *)
-    echo -e "${RED}✗ Unsupported OS: $OS${NC}"
-    exit 1
-    ;;
-esac
-
-case "$ARCH" in
-  x86_64|amd64)
-    ARCH="x64"
-    ;;
-  arm64|aarch64)
-    ARCH="arm64"
-    ;;
-  *)
-    echo -e "${RED}✗ Unsupported architecture: $ARCH${NC}"
-    exit 1
-    ;;
-esac
-
-BINARY="curator-${OS}-${ARCH}"
-if [ "$OS" = "windows" ]; then
-  BINARY="${BINARY}.exe"
-fi
-
-echo "Platform: ${OS}-${ARCH}"
-
-# Get latest release
-echo "Fetching latest release..."
-RELEASE_URL="https://api.github.com/repos/${REPO}/releases/latest"
-DOWNLOAD_URL=$(curl -s "$RELEASE_URL" | grep "browser_download_url.*${BINARY}" | cut -d '"' -f 4)
-
-if [ -z "$DOWNLOAD_URL" ]; then
-  echo -e "${RED}✗ Could not find release for ${OS}-${ARCH}${NC}"
-  echo "Available at: https://github.com/${REPO}/releases"
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+  echo "❌ Node.js is not installed"
+  echo ""
+  echo "Curator requires Node.js 18 or higher."
+  echo ""
+  echo "Install Node.js:"
+  echo "  • macOS: brew install node"
+  echo "  • Ubuntu/Debian: sudo apt install nodejs npm"
+  echo "  • Other: https://nodejs.org"
+  echo ""
   exit 1
 fi
 
-# Create install directory
-mkdir -p "$INSTALL_DIR"
-
-# Download binary
-echo "Downloading curator..."
-curl -L -o "${INSTALL_DIR}/${BINARY_NAME}" "$DOWNLOAD_URL"
-chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
-
-echo -e "${GREEN}✓ Curator installed successfully!${NC}"
-echo ""
-
-# Check if in PATH
-if [[ ":$PATH:" == *":$INSTALL_DIR:"* ]]; then
-  echo -e "${GREEN}✓ $INSTALL_DIR is in your PATH${NC}"
-else
-  echo -e "${YELLOW}⚠ Add $INSTALL_DIR to your PATH:${NC}"
+# Check Node.js version
+NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VERSION" -lt 18 ]; then
+  echo "❌ Node.js $NODE_VERSION is too old"
   echo ""
-  echo "  # Add to ~/.bashrc or ~/.zshrc:"
-  echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+  echo "Curator requires Node.js 18 or higher."
+  echo "Current version: $(node -v)"
   echo ""
+  echo "Update Node.js:"
+  echo "  • macOS: brew upgrade node"
+  echo "  • Ubuntu/Debian: https://github.com/nodesource/distributions"
+  echo "  • Other: https://nodejs.org"
+  echo ""
+  exit 1
 fi
 
-echo "Get started:"
-echo "  curate https://example.com"
+echo "✅ Node.js $(node -v) detected"
+
+# Check if npm is installed
+if ! command -v npm &> /dev/null; then
+  echo "❌ npm is not installed"
+  echo ""
+  echo "npm should come with Node.js. Please reinstall Node.js."
+  exit 1
+fi
+
+echo "✅ npm $(npm -v) detected"
 echo ""
-echo "Get your API key at: https://firecrawl.dev"
+
+# Install curator-cli globally
+echo "📦 Installing curator-cli from npm..."
+echo ""
+
+if npm install -g curator-cli; then
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "✨ Curator installed successfully!"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "Get started:"
+  echo "  curate https://example.com"
+  echo ""
+  echo "View all commands:"
+  echo "  curate --help"
+  echo ""
+  echo "Get your Firecrawl API key at:"
+  echo "  https://firecrawl.dev"
+  echo ""
+else
+  echo ""
+  echo "❌ Installation failed"
+  echo ""
+  echo "Try installing manually:"
+  echo "  npm install -g curator-cli"
+  echo ""
+  echo "If you get permission errors, try:"
+  echo "  sudo npm install -g curator-cli"
+  echo ""
+  echo "Or install without sudo:"
+  echo "  mkdir -p ~/.npm-global"
+  echo "  npm config set prefix '~/.npm-global'"
+  echo "  echo 'export PATH=~/.npm-global/bin:\$PATH' >> ~/.bashrc"
+  echo "  source ~/.bashrc"
+  echo "  npm install -g curator-cli"
+  echo ""
+  exit 1
+fi
