@@ -13,9 +13,19 @@ export interface ScrapeMetadata {
   statusCode?: number;
 }
 
+export interface ImageData {
+  title?: string;
+  imageUrl: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  url?: string;
+  position?: number;
+}
+
 export interface ScrapeResult {
   success: boolean;
   markdown?: string;
+  images?: ImageData[];
   metadata?: ScrapeMetadata;
   error?: string;
 }
@@ -62,6 +72,7 @@ export class FirecrawlClient {
                 resolve({
                   success: true,
                   markdown: response.data?.markdown || '',
+                  images: response.data?.images || [],
                   metadata: response.data?.metadata || {}
                 });
               } else if (res.statusCode === 429) {
