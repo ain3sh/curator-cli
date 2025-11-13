@@ -20,6 +20,7 @@ program
   .option('-n, --name <name>', 'Custom filename (without .md extension)')
   .option('--full', 'Include headers, navs, footers (default: main content only)')
   .option('--refresh', 'Refresh cached content')
+  .option('--media', 'Download and save images from the page')
   .action(async (url: string, options: any) => {
     try {
       await curate(url, options);

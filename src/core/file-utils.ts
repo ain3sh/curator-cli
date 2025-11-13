@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as https from 'https';
+import * as http from 'http';
 
 export function sanitizeFilename(title: string, url: string): string {
   // Try to use title first, fallback to URL
@@ -95,4 +97,61 @@ export function ensureDirectory(dir: string): void {
 
 export function resolveOutputPath(outputDir: string, filename: string): string {
   return path.resolve(process.cwd(), outputDir, filename);
+}
+
+export async function downloadImage(imageUrl: string, outputPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const protocol = imageUrl.startsWith('https') ? https : http;
+
+    protocol.get(imageUrl, (response) => {
+      if (response.statusCode === 301 || response.statusCode === 302) {
+        // Handle redirects
+        const redirectUrl = response.headers.location;
+        if (redirectUrl) {
+          downloadImage(redirectUrl, outputPath).then(resolve).catch(reject);
+          return;
+        }
+      }
+
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to download image: ${response.statusCode}`));
+        return;
+      }
+
+      const fileStream = fs.createWriteStream(outputPath);
+      response.pipe(fileStream);
+
+      fileStream.on('finish', () => {
+        fileStream.close();
+        resolve();
+      });
+
+      fileStream.on('error', (err) => {
+        fs.unlinkSync(outputPath);
+        reject(err);
+      });
+    }).on('error', reject);
+  });
+}
+
+export function getImageFilename(imageUrl: string, position: number): string {
+  try {
+    const urlObj = new URL(imageUrl);
+    const pathname = urlObj.pathname;
+    const filename = path.basename(pathname);
+
+    // Extract extension
+    const ext = path.extname(filename);
+    const validExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+
+    if (ext && validExts.includes(ext.toLowerCase())) {
+      // Use original filename if it has a valid extension
+      return filename;
+    }
+
+    // Fallback to position-based naming with .png default
+    return `image-${position}.png`;
+  } catch {
+    return `image-${position}.png`;
+  }
 }
