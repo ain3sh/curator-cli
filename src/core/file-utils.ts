@@ -24,7 +24,11 @@ export function sanitizeFilename(title: string, url: string): string {
     filename = 'untitled-' + Date.now();
   }
 
-  return filename + '.md';
+  return filename;
+}
+
+export function sanitizeDirname(title: string, url: string): string {
+  return sanitizeFilename(title, url);
 }
 
 function extractFilenameFromUrl(url: string): string {
@@ -73,6 +77,14 @@ export function writeMarkdownFile(
 
   // Write file
   fs.writeFileSync(outputPath, frontmatter + content, 'utf-8');
+}
+
+export function createContentDirectory(baseDir: string, dirName: string): string {
+  const contentDir = path.resolve(process.cwd(), baseDir, dirName);
+  if (!fs.existsSync(contentDir)) {
+    fs.mkdirSync(contentDir, { recursive: true });
+  }
+  return contentDir;
 }
 
 export function ensureDirectory(dir: string): void {

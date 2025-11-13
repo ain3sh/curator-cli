@@ -1,8 +1,9 @@
 import { ConfigManager } from '../core/config';
 import { CacheManager } from '../core/cache';
 import { FirecrawlClient } from '../core/api';
-import { sanitizeFilename, writeMarkdownFile, resolveOutputPath } from '../core/file-utils';
+import { sanitizeDirname, writeMarkdownFile, createContentDirectory } from '../core/file-utils';
 import { spinner, success, error, warning, prompt } from '../ui/prompts';
+import * as path from 'path';
 
 export interface CurateOptions {
   output?: string;
@@ -37,7 +38,7 @@ export async function curate(url: string, options: CurateOptions = {}): Promise<
   if (!options.refresh && configManager.isCacheEnabled() && cacheManager.has(url)) {
     const cached = cacheManager.get(url)!;
     success(`Already cached: ${cached.title}`);
-    success(`Location: ${cached.outputPath}`);
+    success(`Location: ${path.join(cached.outputPath, 'CONTENT.md')}`);
     return;
   }
 
@@ -64,10 +65,11 @@ export async function curate(url: string, options: CurateOptions = {}): Promise<
 
   success(`Fetched: "${title}"`);
 
-  // Determine output location
+  // Determine output location - now using directory structure
   const outputDir = options.output || configManager.getDefaultOutputDir();
-  const filename = options.name ? `${options.name}.md` : sanitizeFilename(title, url);
-  const outputPath = resolveOutputPath(outputDir, filename);
+  const dirname = options.name || sanitizeDirname(title, url);
+  const contentDir = createContentDirectory(outputDir, dirname);
+  const outputPath = path.join(contentDir, 'CONTENT.md');
 
   // Write file
   writeMarkdownFile(outputPath, markdown, {
@@ -82,10 +84,10 @@ export async function curate(url: string, options: CurateOptions = {}): Promise<
   // Update cache
   if (configManager.isCacheEnabled()) {
     cacheManager.set(url, {
-      filename,
+      filename: dirname,
       title,
       fetched: new Date().toISOString(),
-      outputPath,
+      outputPath: contentDir,
       hash: cacheManager.hash(markdown)
     });
   }
