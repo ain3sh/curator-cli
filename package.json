@@ -1,6 +1,6 @@
 {
   "name": "curator-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Blazing fast CLI to curate web content as clean markdown",
   "bin": {
     "curate": "./dist/index.js"
