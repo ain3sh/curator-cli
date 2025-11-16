@@ -3,16 +3,20 @@ name: Build and Release SEA Binaries
 on:
   push:
     tags:
-      - 'v*'  # Trigger on version tags (v0.1.0, v0.2.0, etc.)
+      - 'v*'  # Build and release on pushed tags
   release:
-    types: [created, published]  # Trigger when a new release is created/published via the UI
-  workflow_dispatch:  # Manual trigger for testing
+    types: [created, published]  # Build and release when a GitHub Release is created/published via UI
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name to build and upload for (e.g., v0.1.1)'
+        required: true
+        type: string
 
 jobs:
   build:
     name: Build ${{ matrix.os }}-${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -25,19 +29,27 @@ jobs:
             runner: macos-13  # Intel Mac
           - os: darwin
             arch: arm64
-            runner: macos-latest  # M1/M2/M3 Mac
+            runner: macos-latest  # Apple Silicon
           - os: win32
             arch: x64
             runner: windows-latest
-
+    env:
+      # Determine the tag we are building for:
+      # - release event: github.event.release.tag_name
+      # - push on tag: github.ref_name
+      # - manual: github.event.inputs.tag
+      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || github.event.inputs.tag }}
     steps:
-      - name: Checkout code
+      - name: Checkout code at tag (or current SHA)
         uses: actions/checkout@v4
+        with:
+          # Prefer the resolved tag; fall back to the triggering SHA
+          ref: ${{ env.TAG_NAME || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # Node 20 LTS required for --experimental-sea-config support
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -69,24 +81,23 @@ jobs:
           retention-days: 5
 
   release:
-    name: Create GitHub Release
+    name: Create/Update GitHub Release
     needs: build
     runs-on: ubuntu-latest
-    # Run when:
-    # - This was triggered by a push to a v* tag, OR
-    # - This was triggered by a release event
+    # Run for any of these:
+    # - Tag push
+    # - Release UI events
+    # - Manual runs (with 'tag' input)
     if: >
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
-      (github.event_name == 'release')
-
+      (github.event_name == 'release') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
+    env:
+      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || github.event.inputs.tag }}
     permissions:
       contents: write
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
+      - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
           path: binaries
@@ -100,15 +111,16 @@ jobs:
           find binaries -type f -exec mv {} release/ \;
           ls -lh release/
 
-      - name: Create Release
+      - name: Create or update GitHub Release and upload assets
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ env.TAG_NAME }}
           files: release/*
           generate_release_notes: true
           draft: false
           prerelease: false
           body: |
-            ## 🎨 Curator ${{ github.ref_name }}
+            ## 🎨 Curator ${{ env.TAG_NAME }}
 
             Blazing fast CLI to curate web content as clean markdown.
 
