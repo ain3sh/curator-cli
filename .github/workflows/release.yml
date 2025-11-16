@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'  # Trigger on version tags (v0.1.0, v0.2.0, etc.)
+  release:
+    types: [created, published]  # Trigger when a new release is created/published via the UI
   workflow_dispatch:  # Manual trigger for testing
 
 jobs:
@@ -70,7 +72,12 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Run when:
+    # - This was triggered by a push to a v* tag, OR
+    # - This was triggered by a release event
+    if: >
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'release')
 
     permissions:
       contents: write
