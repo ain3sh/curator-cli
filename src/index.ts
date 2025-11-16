@@ -15,14 +15,15 @@ program
 
 // Main curate command
 program
-  .argument('<url>', 'URL to fetch and convert to markdown')
+  .argument('<url...>', 'URL(s) to fetch and convert to markdown')
   .option('-o, --output <dir>', 'Output directory')
-  .option('-n, --name <name>', 'Custom filename (without .md extension)')
+  .option('-n, --name <name>', 'Custom filename (without .md extension, only works with single URL)')
   .option('--full', 'Include headers, navs, footers (default: main content only)')
   .option('--refresh', 'Refresh cached content')
-  .action(async (url: string, options: any) => {
+  .option('--media', 'Download and save images from the page')
+  .action(async (urls: string[], options: any) => {
     try {
-      await curate(url, options);
+      await curate(urls, options);
     } catch (error: any) {
       console.error(`Error: ${error.message}`);
       process.exit(1);

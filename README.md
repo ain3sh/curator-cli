@@ -1,17 +1,18 @@
 # Curator
 
-> Blazing fast CLI to curate web content as clean markdown
+> CLI to curate web content as clean markdown with media support
 
-Curator fetches any webpage and converts it to clean markdown, perfect for storing as local context in your projects so AI agents don't have to repeatedly fetch the same information.
+Curator fetches webpages and converts them to clean markdown with optional image downloads, organized in directories. Built for storing documentation and content locally so AI agents don't repeatedly fetch the same information.
 
 ## Features
 
-- 🚀 **Blazing fast** - Uses native HTTPS, no heavy dependencies
-- 🎯 **Smart file naming** - Automatically uses webpage titles
-- 📝 **Clean markdown** - Extracts main content, strips navs/headers
-- 💾 **Intelligent caching** - Tracks fetched URLs to avoid duplicates
-- ⚙️ **Zero config** - Interactive setup on first run
-- 🔒 **Secure** - API key stored in `~/.config/curator/.env`
+- **Organized output** - Each page gets its own directory with content and media
+- **Parallel processing** - Fetch multiple URLs simultaneously
+- **Media downloads** - Optional image extraction with `--media` flag
+- **Clean markdown** - Extracts main content, strips navs/headers
+- **Smart caching** - Tracks fetched URLs to avoid duplicates
+- **Zero config** - Interactive setup on first run
+- Uses native HTTPS, no heavy dependencies
 
 ## Installation
 
@@ -47,15 +48,14 @@ npm link
 # First run - will prompt for API key
 curate https://docs.example.com
 
-# Subsequent runs
-curate https://react.dev/learn
-curate https://golang.org/doc/
+# Fetch with images
+curate https://react.dev/learn --media
+
+# Fetch multiple pages at once
+curate https://site1.com https://site2.com https://site3.com
 
 # View cached content
 curate list
-
-# Configure settings
-curate config
 ```
 
 ## Usage
@@ -66,13 +66,22 @@ curate config
 curate <url>
 ```
 
-Fetches the URL and saves clean markdown to `./context/<page-title>.md`
+Creates `./context/<page-title>/CONTENT.md` with the page content.
+
+### Multiple URLs
+
+```bash
+curate <url1> <url2> <url3>
+```
+
+Processes all URLs in parallel. Each gets its own directory.
 
 ### Options
 
 ```bash
 curate <url> -o ./docs/              # Custom output directory
-curate <url> -n my-notes             # Custom filename
+curate <url> -n my-notes             # Custom directory name (single URL only)
+curate <url> --media                 # Download images from the page
 curate <url> --full                  # Include headers/navs/footers
 curate <url> --refresh               # Re-fetch even if cached
 ```
@@ -104,7 +113,17 @@ CACHE_ENABLED=true
 
 ## Output Format
 
-Files are saved with frontmatter metadata:
+Each page gets its own directory with organized content:
+
+```
+./context/
+  └── getting-started-with-react/
+      ├── CONTENT.md
+      ├── hero-image.png        (if --media used)
+      └── diagram.svg           (if --media used)
+```
+
+Content files include frontmatter metadata:
 
 ```markdown
 ---
@@ -126,10 +145,10 @@ Curator tracks fetched URLs in `~/.config/curator/manifest.json` to avoid duplic
 ```json
 {
   "https://example.com": {
-    "filename": "example-domain.md",
+    "filename": "example-domain",
     "title": "Example Domain",
     "fetched": "2025-11-09T10:30:00Z",
-    "outputPath": "/path/to/context/example-domain.md",
+    "outputPath": "/path/to/context/example-domain",
     "hash": "abc123"
   }
 }
@@ -137,30 +156,40 @@ Curator tracks fetched URLs in `~/.config/curator/manifest.json` to avoid duplic
 
 ## Why Curator?
 
-When working with AI agents on projects, they often need to fetch documentation repeatedly. Curator solves this by:
+When working with AI agents, they often fetch the same documentation repeatedly. Curator lets you:
 
-1. **Pre-fetching docs** - Store them locally once
-2. **Clean format** - Markdown is perfect for AI context
-3. **Organization** - All docs in one place with metadata
-4. **Speed** - No repeated network calls
+1. Store docs locally once with `curate <url>`
+2. Include images when needed with `--media`
+3. Batch fetch multiple pages at once
+4. Keep everything organized in directories
+5. Never re-fetch unless you want to (`--refresh`)
 
 ## Examples
 
 ```bash
-# Fetch API documentation
+# Fetch single page
 curate https://docs.firecrawl.dev/api-reference/v2-introduction
 
-# Fetch blog posts for research
-curate https://blog.example.com/post -o ./research/
+# Fetch page with images
+curate https://react.dev/learn --media
 
-# Fetch with custom name
+# Fetch multiple pages in parallel
+curate https://go.dev/doc/ https://go.dev/ref/spec https://go.dev/ref/mem
+
+# Custom output directory
+curate https://example.com -o ./research/
+
+# Custom directory name (single URL only)
 curate https://react.dev/reference/react -n react-api-reference
-
-# Check what you've fetched
-curate list
 
 # Re-fetch updated content
 curate https://docs.example.com --refresh
+
+# Batch fetch with media to custom location
+curate url1 url2 url3 --media -o ./docs/references/
+
+# Check what you've cached
+curate list
 ```
 
 ## Development
